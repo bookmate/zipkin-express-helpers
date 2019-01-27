@@ -1,0 +1,25 @@
+{
+  "extends": "eslint:recommended",
+  "env": {
+    "node": true,
+    "es6": true,
+    "jest/globals": true
+  },
+  "parserOptions": {
+    "ecmaVersion": 2017
+  },
+  "rules": {
+    "semi": 1,
+    "eqeqeq": 1,
+    "no-console": 0,
+    "object-curly-spacing": [1, "always"],
+    "no-unused-vars": ["error", { "vars": "all", "args": "after-used" }],
+    "jest/no-disabled-tests": "warn",
+    "jest/no-focused-tests": "error",
+    "jest/no-identical-title": "error",
+    "jest/valid-expect": "error"
+  },
+  "plugins": [
+    "jest"
+  ]
+}
