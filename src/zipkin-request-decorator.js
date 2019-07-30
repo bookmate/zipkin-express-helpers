@@ -6,12 +6,13 @@
 const {
   Tracer,
   ExplicitContext,
-  ConsoleRecorder,
+  BatchRecorder,
   Request,
   HttpHeaders,
   option,
   TraceId
 } = require('zipkin');
+const { HttpLogger } = require('zipkin-transport-http');
 const values = require('lodash/values');
 const toLower = require('lodash/toLower');
 
@@ -20,7 +21,9 @@ const { normalizeHeaders } = require('./utils');
 const { Some, None } = option;
 
 function headerOption(headers, header) {
-  // This is some monadic shit! Apparently, zipkin devs combine OOP and FP liberally
+  // Here was freaking-out-comment, Some and None are parts of option type, which
+  // usually is written as Just and Nothing, accordingly. You can read about them here:
+  // http://adit.io/posts/2013-04-17-functors,_applicatives,_and_monads_in_pictures.html
   const val = headers[header.toLowerCase()];
   if (val) {
     return new Some(val);
@@ -31,9 +34,10 @@ function headerOption(headers, header) {
 
 class ZipkinRequestDecorator {
 
-  constructor({ localServiceName }) {
+  constructor({ localServiceName, endpoint }) {
     const ctxImpl = new ExplicitContext();
-    const recorder = new ConsoleRecorder();
+    const logger = new HttpLogger({ endpoint });
+    const recorder = new BatchRecorder({ logger });
     this.tracer = new Tracer({ ctxImpl, recorder, localServiceName });
   }
 
@@ -44,18 +48,15 @@ class ZipkinRequestDecorator {
       const id = this.createIdFromHeaders(headers, this.tracer);
       this.tracer.setId(id);
       this.tracer.scoped(() => {
-        // we are creating a child id within the context of the parent id
         this.tracer.setId(this.tracer.createChildId());
         traceId = this.tracer.id;
       });
     } else {
-      // if there are no zipkin headers in the request,
-      // we are creating a new root trace id
       this.tracer.setId(this.tracer.createRootId());
       traceId = this.tracer.id;
     }
 
-    this.removeZipkinHeadersFromRequest(req); // remove old zipkin headers from request
+    this.removeZipkinHeadersFromRequest(req);
     return Request.addZipkinHeaders(req, traceId);
   }
 
@@ -74,7 +75,7 @@ class ZipkinRequestDecorator {
   createIdFromHeaders(headers) {
     return new TraceId({
       traceId: headerOption(headers, HttpHeaders.TraceId),
-      spanId: headerOption(headers, HttpHeaders.SpanId).getOrElse(), // <-- spanId needs to be retrieved from the monad
+      spanId: headerOption(headers, HttpHeaders.SpanId).getOrElse(),
       parentId: headerOption(headers, HttpHeaders.ParentSpanId)
     });
   }
