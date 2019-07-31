@@ -10,7 +10,8 @@ const {
   Request,
   HttpHeaders,
   option,
-  TraceId
+  TraceId,
+  jsonEncoder,
 } = require('zipkin');
 const { HttpLogger } = require('zipkin-transport-http');
 const values = require('lodash/values');
@@ -34,9 +35,12 @@ function headerOption(headers, header) {
 
 class ZipkinRequestDecorator {
 
-  constructor({ localServiceName, endpoint }) {
+  constructor({ localServiceName, endpoint, encoderVersion = 1 }) {
     const ctxImpl = new ExplicitContext();
-    const logger = new HttpLogger({ endpoint });
+    const logger = new HttpLogger({
+      endpoint,
+      jsonEncoder: jsonEncoder[`JSON_V${encoderVersion}`],
+    });
     const recorder = new BatchRecorder({ logger });
     this.tracer = new Tracer({ ctxImpl, recorder, localServiceName });
   }
