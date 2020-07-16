@@ -20,7 +20,7 @@
   },
   "homepage": "https://github.com/azangru/zipkin-express-helpers#readme",
   "dependencies": {
-    "lodash": "4.17.13",
+    "lodash": "4.17.19",
     "zipkin": "0.16.0"
   },
   "devDependencies": {
